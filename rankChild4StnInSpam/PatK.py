@@ -6,6 +6,7 @@ from structure import _ChildDoc
 from structure import _Stn
 
 import os
+import numpy as np
 
 def readCommentSimFile(commentSimFile, corpusObj, t_threshold):
 	f = open(commentSimFile)
@@ -129,6 +130,8 @@ def rankNormalComment4Stn(corpusObj, proportionOfNormal):
 
 		# orderedCommentListBySim = sorted(parentObj.m_simMap, key=parentObj.m_simMap.__getitem__, reverse=True)
 
+		print "parentName:", parentID, "\t",
+
 		rankCommentList = []
 		for comment in parentObj.m_commentList:
 			if comment in normalCommentList4Corpus:
@@ -151,6 +154,8 @@ def rankNormalComment4Stn(corpusObj, proportionOfNormal):
 				continue
 
 			AP = computeAP(stnObj, rankCommentList)
+
+			print "stnIndex\t", stnIndex, "\t", AP, "\t"
 
 			totalAP += AP
 			totalCorrespondingStnNum += 1
@@ -179,12 +184,14 @@ def computeAP(stnObj, normalCommentList):
 	# print "modelChildRankList\t", modelChildRankList
 	# print "groundTruthChildRankList\t", groundTruthChildRankList
 
+	print modelChildRankList
+	print groundTruthChildRankList
 	AP = 0
 	hit = 0
 	precisionK = 0
-	if len(modelChildRankList) == 0:
-		print "zero len GT\t", groundTruthChildRankList
-		return 0
+	# if len(modelChildRankList) == 0:
+	# 	print "zero len GT\t", groundTruthChildRankList
+	# 	return 0
 	for i in range(len(modelChildRankList)):
 		# if i > 9:
 		# 	break
@@ -207,6 +214,140 @@ def computeAP(stnObj, normalCommentList):
 
 	return AP
 
+def computePatK(corpusObj, K):
+
+	totalPatK = 0
+	totalStnNum = 0
+	totalCorrespondingStnNum = 0
+
+	for parentID in corpusObj.m_parentMap.keys():
+		parentObj = corpusObj.m_parentMap[parentID]
+		# print "parentName:", parentID, "\t", 
+
+		for stnIndex in parentObj.m_stnList:
+			stnObj = parentObj.m_stnMap[stnIndex]
+
+			totalStnNum += 1
+
+			if not len(stnObj.m_groundTruthChildList):
+				continue
+
+			childLikelihood4StnMAP={}
+			for childName in stnObj.m_childDocMap.keys():
+	
+				childLikelihood = float(stnObj.m_childDocMap[childName])
+				# print childName
+				childLikelihood4StnMAP[childName] = childLikelihood
+
+			orderedCommentListByLikelihood = sorted(childLikelihood4StnMAP, key=childLikelihood4StnMAP.__getitem__, reverse=True)
+
+			if len(orderedCommentListByLikelihood) < K:
+				continue
+
+			PatK = PatK4Stn(stnObj, orderedCommentListByLikelihood, K)
+
+			totalPatK += PatK
+			totalCorrespondingStnNum += 1
+
+	AvgPatK = totalPatK*1.0/totalCorrespondingStnNum
+	print "avgPatK\t", AvgPatK, "\t totalPatK\t", totalPatK
+	print "totalCorrespondingStnNum\t", totalCorrespondingStnNum, "\t", "totalStnNum\t", totalStnNum
+
+
+def PatK4Stn(stnObj, rankCommentList, K):
+	groundTruthChildRankList = stnObj.m_groundTruthChildList
+
+	PatK = 0
+
+	relevantNum = 0
+	for indexInList in range(K):
+		commentID = rankCommentList[indexInList]
+		if commentID in groundTruthChildRankList:
+			relevantNum += 1
+
+	return relevantNum*1.0/K
+
+def compuateNDCG(corpusObj):
+	totalNDCG = 0
+	totalStnNum = 0
+	totalCorrespondingStnNum = 0
+
+	for parentID in corpusObj.m_parentMap.keys():
+		parentObj = corpusObj.m_parentMap[parentID]
+		# print "parentName:", parentID, "\t", 
+
+		for stnIndex in parentObj.m_stnList:
+			stnObj = parentObj.m_stnMap[stnIndex]
+
+			totalStnNum += 1
+
+			if not len(stnObj.m_groundTruthChildList):
+				continue
+
+			childLikelihood4StnMAP={}
+			for childName in stnObj.m_childDocMap.keys():
+	
+				childLikelihood = float(stnObj.m_childDocMap[childName])
+				# print childName
+				childLikelihood4StnMAP[childName] = childLikelihood
+
+			orderedCommentListByLikelihood = sorted(childLikelihood4StnMAP, key=childLikelihood4StnMAP.__getitem__, reverse=True)
+
+			# if len(orderedCommentListByLikelihood) < K:
+			# 	continue
+
+			ndcg = NDCG4Stn(stnObj, orderedCommentListByLikelihood)
+
+			# print "stnIndex\t", stnIndex, "\t", ndcg, "\t"
+
+			totalNDCG += ndcg
+			totalCorrespondingStnNum += 1
+
+		# print "\n"
+
+	AvgNDCG = totalNDCG*1.0/totalCorrespondingStnNum
+	print "avgNDCG\t", AvgNDCG, "\t totalNDCG\t", totalNDCG
+	print "totalCorrespondingStnNum\t", totalCorrespondingStnNum, "\t", "totalStnNum\t", totalStnNum
+
+def NDCG4Stn(stnObj, rankCommentList):
+	groundTruthChildRankList = stnObj.m_groundTruthChildList
+	ndcg = 0
+
+	for commentID in groundTruthChildRankList:
+		if commentID not in rankCommentList:
+			print "error"
+
+	# print rankCommentList
+	for i in range(len(rankCommentList)):
+		commentID = rankCommentList[i]
+
+		dcg = 0
+		if commentID in groundTruthChildRankList:
+			dcg = 1.0/np.log(1+i+1)
+		else:
+			dcg = 0
+
+		ndcg += dcg
+
+	dcgGT = 0
+	# print len(groundTruthChildRankList)
+	# print "ndcg\t", ndcg
+
+	# print groundTruthChildRankList
+	for i in range(len(groundTruthChildRankList)):
+		dcg = 1.0/np.log(1+i+1)
+
+		dcgGT += dcg
+
+	ndcg = ndcg*1.0/dcgGT
+
+
+	# print "dcgGT\t", dcgGT
+
+	return ndcg
+
+
+
 if __name__ == '__main__':
 	annotatedFile = "./annotatedFile.txt"
 	corpusObj = _Corpus()
@@ -215,21 +356,27 @@ if __name__ == '__main__':
 	simFile = "./LDA/topChild4Parent_LDA.txt"
 	likelihoodFile = "./LDA/topChild4Stn_8.txt"
 
-	simFile = "./CorrLDA/topChild4Parent_CorrLDA.txt"
-	likelihoodFile = "./CorrLDA/topChild4Stn.txt"
+	# simFile = "./CorrLDA/topChild4Parent_CorrLDA.txt"
+	# likelihoodFile = "./CorrLDA/topChild4Stn.txt"
 
-	simFile = "./SCTM/topChild4Parent_SCTM_2.txt"
-	likelihoodFile = "./SCTM/topChild4Stn_SCTM.txt"
+	# simFile = "./SCTM/topChild4Parent_SCTM_2.txt"
+	# likelihoodFile = "./SCTM/topChild4Stn_SCTM.txt"
 
-	simFile = "./DCMCorrLDA/topChild4Parent_DCMCorrLDA_prior.txt"
-	likelihoodFile = "./DCMCorrLDA/topChild4Stn_prior.txt"
+	# simFile = "./DCMCorrLDA/topChild4Parent_DCMCorrLDA_prior.txt"
+	# likelihoodFile = "./DCMCorrLDA/topChild4Stn_prior.txt"
 
 	t_threshold = -0.1
 	readCommentSimFile(simFile, corpusObj, t_threshold)
 	readCommentLikelihoodFile(likelihoodFile, corpusObj)
 	loadAnnotatedData(annotatedFile, corpusObj)
 
-	proportionOfNormal = 0.2
-	rankNormalComment4Stn(corpusObj, proportionOfNormal)
+	# compuateNDCG(corpusObj)
+
+	K = 1
+	print "K\t", K
+	computePatK(corpusObj, K)
+
+	# proportionOfNormal = 1
+	# rankNormalComment4Stn(corpusObj, proportionOfNormal)
 
 

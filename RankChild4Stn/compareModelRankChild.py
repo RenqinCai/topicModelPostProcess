@@ -305,6 +305,7 @@ if __name__ == '__main__':
 	pcFile = "./PCB_topChild4Stn_v6.txt"
 	pcFile2 = "./PCBP_topChild4Stn_v3.txt"
 	lmFile = "./languageModel_topChild4Stn_v1.txt";
+	cLDAFile = "./topChild4Stn.txt"
 
 	# loadModel(sctmFile, corpusObj)
 	# loadModel(pcFile, corpusObj)

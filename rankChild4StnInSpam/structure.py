@@ -90,7 +90,7 @@ class _Corpus:
 	def __init__(self):
 		##parentName:parentObj
 		self.m_parentMap = {}
-		self.m_simMAP={}
+		self.m_simMap={}
 		self.m_spamMAP = {}
 		self.m_spamNum = 0
 

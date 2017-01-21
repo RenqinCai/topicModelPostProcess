@@ -143,10 +143,11 @@ def computeMAP(corpusObj, modelIndex):
 
 	for parentName in corpusObj.m_parentMap.keys():
 		parentObj = corpusObj.m_parentMap[parentName]
-
+		print "parent\t", parentName
 		for stnName in parentObj.m_stnMap.keys():
 			stnObj = parentObj.m_stnMap[stnName]
 
+			print stnName
 			totalStnNum += 1
 			if not len(stnObj.m_groundTruthChildList):
 				continue
@@ -167,7 +168,7 @@ def computeMAP(corpusObj, modelIndex):
 
 def computeAP(stnObj, modelIndex):
 	groundTruthChildRankList = stnObj.m_groundTruthChildList
- 
+ 	
  	# print stnObj.m_childDocMap[modelIndex].keys()
 	for childName in stnObj.m_childDocMap[modelIndex].keys():
 		childLikelihood = float(stnObj.m_childDocMap[modelIndex][childName])
@@ -177,9 +178,9 @@ def computeAP(stnObj, modelIndex):
 
 	# random.shuffle(modelChildRankList)
 
-	print "stnName\t", stnObj.getName()
-	print "modelChildRankList\t", modelChildRankList
-	print "groundTruthChildRankList\t", groundTruthChildRankList
+	# print "stnName\t", stnObj.getName()
+	# print "modelChildRankList\t", modelChildRankList
+	# print "groundTruthChildRankList\t", groundTruthChildRankList
 
 	AP = 0
 	hit = 0
@@ -255,59 +256,93 @@ def compareAP(corpusObj, modelIndex1, modelIndex2):
 	# for name in model2LargeStn.keys():
 	# 	print name, "\t", model2LargeStn[name]
 	
+def outputAP(corpusObj, outputFile, modelNum):
+	f = open(outputFile, 'w')
+
+	for parentName in corpusObj.m_parentMap.keys():
+		parentObj = corpusObj.m_parentMap[parentName]
+
+		for stnName in parentObj.m_stnMap.keys():
+			stnObj = parentObj.m_stnMap[stnName]
+
+			if not len(stnObj.m_groundTruthChildList):
+				continue
+
+			name = parentName + "_"+stnObj.getName()
+
+			f.write(name+"\t")
+			for modelIndex in range(modelNum):
+				AP = stnObj.m_APMap[modelIndex]
+
+				f.write(str(AP)+"\t")
+
+			f.write("\n")
+	f.close()
 
 if __name__ == '__main__':
-	annotatedFile = "./topicalQueryFile_7.txt"
-	# annotatedFile = "./annotatedFile.txt"
+	# annotatedFile = "./topicalQueryFile_7.txt"
+	annotatedFile = "./annotatedFile.txt"
 	corpusObj = _Corpus()
 
 	modelNum = 5
 
 	# BM25File = "./BM25_topChild4Stn_v1.txt"
-	ldaFile = "./LDA/topChild4Stn_hybridPro.txt"
-	ldaArticleFile = "./LDA_article/LDA_articles_topChild4Stn_v10.txt"
-	corrLDAFile = "./corrlda/topChild4Stn_hybridPro.txt"
+	ldaFile = "./LDA/topChild4Stn.txt"
+	ldaFile = "./LDA/topChild4Stn_10.txt"
+
+	# ldaArticleFile = "./LDA_article/LDA_articles_topChild4Stn_v10.txt"
+	corrLDAFile = "./corrlda/topChild4Stn.txt"
+	corrLDAFile = "./corrlda/topChild4Stn_10.txt"
+
 	# sctmFile = "./sctm_topChild4Stn_v2.txt"
-	pcFile = "./PCB/topChild4Stn_hybridPro.txt"
-	pcFile2 = "./PCBP/topChild4Stn_hybridPro.txt"
+	pcbFile = "./PCB/topChild4Stn.txt"
+	pcbpFile = "./PCBP/topChild4Stn.txt"
 	# pcFile3 = "./PCBP_Hard/PCBP_Hard_topChild4Stn_v10.txt"
 	# pcFile4 = "./ACCTM_PC/ACCTM_PC_topChild4Stn_v2.txt"
-	pcFile3 = "./ACCTM_CZ/topChild4Stn_hybridPro.txt"
+	ACCTM_CZLRFile = "./ACCTM_CZLR/topChild4Stn_hybrid.txt"
+	ACCTMCZFile = "./ACCTM_CZ/topChild4Stn.txt"
+	ACCTMCLRFile = "./ACCTM_CLR/topChild4Stn.txt"
+	LMFile = "./LM/topChild4Stn.txt"
+	DCMCorrLDAFile = "./DCMCorrLDA/topChild4Stn_prior.txt"
+	DCMDMMCorrLDAFile = "./DCMDMMCorrLDA/topChild4Stn_3.txt"
+
+	sctmFile = "./SCTM/topChild4Stn_SCTM.txt"
+	cLDAFile = "./CLDA/topChild4Stn.txt"
+
 	# lmFile = "./LM/LM_topChild4Stn_v1.txt";
 
 	# loadModel(sctmFile, corpusObj)
 	# loadModel(pcFile, corpusObj)
 	# loadModel(BM25File, corpusObj, 0)
-	loadModel(pcFile, corpusObj, 1)
-	# loadModel(corrLDAFile, corpusObj, 2)
+	# loadModel(sctmFile, corpusObj, 0)
+
+	# loadModel(sctmFile, corpusObj, 0)
+	loadModel(DCMCorrLDAFile, corpusObj, 0)
+	
 	# loadModel(sctmFile, corpusObj, 3)
 	# loadModel(pcFile, corpusObj, 4)
 
 	loadAnnotatedData(annotatedFile, corpusObj)
 	# debugGroundTruthChild(corpusObj)
 	# for i in range(modelNum):
-	computeMAP(corpusObj, 1)
+	computeMAP(corpusObj, 0)
 
-	# addModel(corrLDAFile, corpusObj, 0)
-	# computeMAP(corpusObj, 0)
+	# addModel(DCMLDAFile, corpusObj, 1)
+	# computeMAP(corpusObj, 1)
 
-	# addModel(pcFile, corpusObj, 2)
+	# compareAP(corpusObj, 0, 1)
+
+	# addModel(pcbFile, corpusObj, 2)
 	# computeMAP(corpusObj, 2)
 
-	# addModel(pcFile2, corpusObj, 3)
+	# addModel(pcbpFile, corpusObj, 3)
 	# computeMAP(corpusObj, 3)
 
-	# addModel(pcFile3, corpusObj, 4)
+	# addModel(ACCTMCZFile, corpusObj, 4)
 	# computeMAP(corpusObj, 4)
 
-	# addModel(BM25File, corpusObj, 3)
-	# computeMAP(corpusObj, 3)
-
-	# addModel(sctmFile, corpusObj, 4)
-	# computeMAP(corpusObj, 4)
-
-	# addModel(lmFile, corpusObj, 5)
+	# addModel(LMFile, corpusObj, 5)
 	# computeMAP(corpusObj, 5)
 
-	# compareAP(corpusObj, 3, 4)
-
+	# outputFile = "./APComparison.txt"
+	# outputAP(corpusObj, outputFile, 6)
